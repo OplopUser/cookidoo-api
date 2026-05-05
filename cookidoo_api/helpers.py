@@ -1,5 +1,6 @@
 """Cookidoo API helpers."""
 
+from dataclasses import replace
 import json
 import logging
 import os
@@ -52,6 +53,7 @@ from cookidoo_api.types import (
 _LOGGER = logging.getLogger(__name__)
 
 localization_file_path = os.path.join(os.path.dirname(__file__), "localization.json")
+_localization_options_cache: list[CookidooLocalizationConfig] | None = None
 
 
 def cookidoo_auth_data_from_json(
@@ -152,9 +154,7 @@ def _extract_images_from_descriptive_assets(
 
     # Get the first available image URL from any variant
     for asset in descriptive_assets:
-        _LOGGER.debug(asset)
         for variant, url in asset.items():
-            _LOGGER.debug(variant)
             if url and variant in ("square", "portrait", "landscape"):
                 thumbnail, image = _process_image_url(str(url))
                 break
@@ -437,17 +437,26 @@ async def __get_localization_options(
     country: str | None = None,
     language: str | None = None,
 ) -> list[CookidooLocalizationConfig]:
-    async with aiofiles.open(localization_file_path, encoding="utf-8") as file:
-        options_ = cast(list[dict[str, str]], json.loads(await file.read()))
-        options = (CookidooLocalizationConfig(**x) for x in options_)
-        filtered_options = filter(
-            lambda option: (
-                (not country or option.country_code == country)
-                and (not language or option.language == language)
-            ),
-            options,
-        )
-        return list(cast(list[CookidooLocalizationConfig], filtered_options))
+    options = await __load_localization_options()
+    return [
+        replace(option)
+        for option in options
+        if (not country or option.country_code == country)
+        and (not language or option.language == language)
+    ]
+
+
+async def __load_localization_options() -> list[CookidooLocalizationConfig]:
+    global _localization_options_cache  # noqa: PLW0603
+
+    if _localization_options_cache is None:
+        async with aiofiles.open(localization_file_path, encoding="utf-8") as file:
+            options_ = cast(list[dict[str, str]], json.loads(await file.read()))
+            _localization_options_cache = [
+                CookidooLocalizationConfig(**option) for option in options_
+            ]
+
+    return _localization_options_cache
 
 
 async def get_localization_options(
@@ -460,9 +469,9 @@ async def get_localization_options(
 
 async def get_country_options() -> list[str]:
     """Get a list of possible country options."""
-    return list({option.country_code for option in await get_localization_options()})
+    return sorted({option.country_code for option in await get_localization_options()})
 
 
 async def get_language_options() -> list[str]:
     """Get a list of possible language options."""
-    return list({option.language for option in await get_localization_options()})
+    return sorted({option.language for option in await get_localization_options()})

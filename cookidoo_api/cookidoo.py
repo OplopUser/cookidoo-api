@@ -108,7 +108,7 @@ class Cookidoo:
     def __init__(
         self,
         session: ClientSession,
-        cfg: CookidooConfig = CookidooConfig(),
+        cfg: CookidooConfig | None = None,
     ) -> None:
         """Init function for Cookidoo API.
 
@@ -122,7 +122,7 @@ class Cookidoo:
 
         """
         self._session = session
-        self._cfg = cfg
+        self._cfg = cfg or CookidooConfig()
         self._token_headers = DEFAULT_TOKEN_HEADERS.copy()
         self._api_headers = DEFAULT_API_HEADERS.copy()
         self.__expires_in: int

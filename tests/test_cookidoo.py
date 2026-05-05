@@ -21,6 +21,7 @@ from cookidoo_api.types import (
     CookidooAdditionalItem,
     CookidooConfig,
     CookidooIngredientItem,
+    CookidooLocalizationConfig,
 )
 from tests.responses import (
     COOKIDOO_TEST_RESPONSE_ACTIVE_SUBSCRIPTION,
@@ -91,6 +92,22 @@ class TestGetterSetter:
             str(cookidoo.api_endpoint)
             == f"https://{prefix}.tmmobile.vorwerk-digital.com"
         )
+
+    async def test_default_config_is_not_shared(
+        self, mocked: aioresponses, session: ClientSession
+    ) -> None:
+        """Test default config is created per instance."""
+        first = Cookidoo(session)
+        second = Cookidoo(session)
+
+        first._cfg.localization = CookidooLocalizationConfig(  # noqa: SLF001
+            country_code="de",
+            language="de-DE",
+            url="https://cookidoo.de/foundation/de-DE",
+        )
+
+        assert first.localization.country_code == "de"
+        assert second.localization.country_code == "ch"
 
 
 class TestLogin:
