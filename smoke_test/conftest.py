@@ -10,7 +10,11 @@ import pytest
 
 from cookidoo_api.cookidoo import Cookidoo
 from cookidoo_api.helpers import get_localization_options
-from cookidoo_api.types import CookidooAuthResponse, CookidooConfig
+from cookidoo_api.types import (
+    CookidooAuthResponse,
+    CookidooConfig,
+    CookidooLocalizationConfig,
+)
 
 load_dotenv()
 
@@ -47,16 +51,9 @@ async def aiohttp_client_session() -> AsyncGenerator[ClientSession]:
 async def cookidoo_api_client_no_auth(session: ClientSession) -> Cookidoo:
     """Create Cookidoo instance."""
 
-    country = os.environ["COUNTRY"]
-    localizations = await get_localization_options(country=country)
-
     cookidoo = Cookidoo(
         session,
-        cfg=CookidooConfig(
-            email=os.environ[f"EMAIL_{country.upper()}"],
-            password=os.environ["PASSWORD"],
-            localization=localizations[0],
-        ),
+        cfg=await _cookidoo_config_from_env(),
     )
     return cookidoo
 
@@ -67,26 +64,41 @@ async def cookidoo_authenticated_api_client(
 ) -> Cookidoo:
     """Create authenticated Cookidoo instance."""
 
-    country = os.environ["COUNTRY"]
-    localizations = await get_localization_options(country=country)
-
-    print(
-        CookidooConfig(
-            email=os.environ[f"EMAIL_{country.upper()}"],
-            password=os.environ["PASSWORD"],
-            localization=localizations[0],
-        )
-    )
     cookidoo = Cookidoo(
         session,
-        cfg=CookidooConfig(
-            email=os.environ[f"EMAIL_{country.upper()}"],
-            password=os.environ["PASSWORD"],
-            localization=localizations[0],
-        ),
+        cfg=await _cookidoo_config_from_env(),
     )
 
     # Restore auth data from saved token
     cookidoo.auth_data = auth_data
 
     return cookidoo
+
+
+async def _cookidoo_config_from_env() -> CookidooConfig:
+    country = os.environ.get("COUNTRY", "ar")
+    language = os.environ.get("LANGUAGE")
+    localizations = await get_localization_options(country=country, language=language)
+    if not localizations:
+        msg = f"No Cookidoo localization found for country={country!r}, language={language!r}"
+        raise ValueError(msg)
+
+    return CookidooConfig(
+        email=_email_from_env(country),
+        password=os.environ["PASSWORD"],
+        localization=_localization_from_env(localizations[0]),
+    )
+
+
+def _email_from_env(country: str) -> str:
+    return os.environ.get(f"EMAIL_{country.upper()}") or os.environ["EMAIL"]
+
+
+def _localization_from_env(
+    default_localization: CookidooLocalizationConfig,
+) -> CookidooLocalizationConfig:
+    return CookidooLocalizationConfig(
+        country_code=os.environ.get("COUNTRY", default_localization.country_code),
+        language=os.environ.get("LANGUAGE", default_localization.language),
+        url=os.environ.get("COOKIDOO_URL", default_localization.url),
+    )

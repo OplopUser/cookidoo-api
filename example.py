@@ -26,7 +26,7 @@ load_dotenv()
 
 # Configure the root logger
 logging.basicConfig(
-    level=logging.DEBUG,  # Set the logging level (DEBUG, INFO, WARNING, etc.)
+    level=os.environ.get("LOG_LEVEL", "INFO"),
     format="%(asctime)s [%(levelname)8s] %(name)s:%(lineno)s %(message)s",  # Format of the log messages
     handlers=[  # Specify the handlers for the logger
         logging.StreamHandler(sys.stdout)  # Output to stdout
@@ -44,14 +44,18 @@ async def main():
         _localizations_en = await get_localization_options(language="en")
 
         # Create Cookidoo instance with email and password
+        country = os.environ.get("COUNTRY", "ar")
+        language = os.environ.get("LANGUAGE", "en")
+        localizations = await get_localization_options(
+            country=country,
+            language=language,
+        )
         cookidoo = Cookidoo(
             session,
             cfg=CookidooConfig(
                 email=os.environ["EMAIL"],
                 password=os.environ["PASSWORD"],
-                localization=(
-                    await get_localization_options(country="ie", language="en-GB")
-                )[0],
+                localization=localizations[0],
             ),
         )
         # Login

@@ -37,7 +37,14 @@ Make sure to have stored your credentials in the top-level file `.env` as such, 
 ```text
 EMAIL=your@mail.com
 PASSWORD=password
+COUNTRY=ar
+LANGUAGE=en
 ```
+
+`COUNTRY` and `LANGUAGE` select the Cookidoo localization. International
+accounts can use `COUNTRY=ar` and `LANGUAGE=en`, which maps to
+`cookidoo.international`. You can also provide `COOKIDOO_URL` when you need to
+force a specific localization URL.
 
 Run the [example script](https://github.com/miaucl/cookidoo-api/blob/master/example.py) and have a look at the inline comments for more explanation.
 
@@ -113,6 +120,20 @@ The unit tests base on the recorded payloads captured between the server and the
 ### Smoke tests
 
 The smoke tests implements a series of request querying the server. It tries to cover as much functionality as possible while not impacting the server too much (we want to stay nice and not get noticed ^^). Therefore, it still might be the case that something breaks without noticing. Further, as it is a github action, only **non-premium** are tested, as it is currently not deemed worth keeping premium subscription for this sole purpose (might change my mind with a few donations^^). Should something break for premium features, a temporary account with trial period is created easily.
+
+For a local live smoke test, use:
+
+```bash
+python scripts/smoke-live.py
+```
+
+This test logs in, creates temporary shopping-list, calendar, collection, and
+managed-collection data, then removes what it created in a cleanup step. Use it
+only against an account where temporary test data is acceptable.
+
+The pytest smoke fixtures accept either `EMAIL` or country-specific variables
+such as `EMAIL_IE`. `PASSWORD` is still required. Optional `COUNTRY`, `LANGUAGE`,
+and `COOKIDOO_URL` variables control localization.
 
 ### Releasing
 
