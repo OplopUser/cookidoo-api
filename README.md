@@ -100,7 +100,7 @@ Following VSCode integrations may be helpful:
 
 ### Raw API Requests
 
-The raw requests intercepted between the Cookidoo Android App and the backend can be found here `./docs/raw-api-requests`. They have been used to reconstruct the API which is implemented in this library.
+The API was reconstructed from intercepted Cookidoo Android App traffic. Raw request dumps are intentionally not committed because they can contain bearer tokens, cookies, and other account-specific headers.
 
 ## Testing
 
